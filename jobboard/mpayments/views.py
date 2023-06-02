@@ -1,6 +1,7 @@
 import json
 import logging
 
+from django.http import HttpResponse
 from django_daraja.mpesa.core import MpesaClient
 from rest_framework import generics, status
 from rest_framework.response import Response
@@ -10,6 +11,19 @@ from .models import Transaction
 from .serializers import TransactionSerializer
 
 logger = logging.getLogger(__name__)
+
+from django_daraja.mpesa.core import MpesaClient
+
+
+def index(request):
+    cl = MpesaClient()
+    phone_number = '0705482738'
+    amount = 1
+    account_reference = 'reference'
+    transaction_desc = 'Description'
+    callback_url = 'https://willieilus.pythonanywhere.com/pay/callback'
+    response = cl.stk_push(phone_number, amount, account_reference, transaction_desc, callback_url)
+    return HttpResponse(response)
 
 
 class MpesaCallbackView(APIView):
@@ -39,7 +53,7 @@ class InitiatePaymentView(APIView):
         amount = 1
         account_reference = 'reference'
         transaction_desc = 'description'
-        callback_url = 'https://willieilus.pythonanywhere.com/pay/callback/'
+        callback_url = 'https://willieilus.pythonanywhere.com/pay/callback'
         response = cl.stk_push(phone_number, amount, account_reference, transaction_desc, callback_url)
         return Response(response, status=status.HTTP_200_OK)
 
