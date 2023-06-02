@@ -39,7 +39,7 @@ class InitiatePaymentView(APIView):
         amount = 1
         account_reference = 'reference'
         transaction_desc = 'description'
-        callback_url = 'http://127.0.0.1:8000/pay/callback/'
+        callback_url = 'https://willieilus.pythonanywhere.com/pay/callback/'
         response = cl.stk_push(phone_number, amount, account_reference, transaction_desc, callback_url)
         return Response(response, status=status.HTTP_200_OK)
 
