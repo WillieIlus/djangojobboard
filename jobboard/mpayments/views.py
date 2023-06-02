@@ -3,16 +3,44 @@ import logging
 
 from django.http import HttpResponse
 from django_daraja.mpesa.core import MpesaClient
-from rest_framework import generics, status
-from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from .models import Transaction
 from .serializers import TransactionSerializer
 
 logger = logging.getLogger(__name__)
 
-from django_daraja.mpesa.core import MpesaClient
+
+
+def mpesa_callback_view(request):
+    logger.info("Callback from MPESA")
+    data = request.POST
+    status_code = check_status(data)
+    transaction = get_or_create_transaction(data)
+
+    if status_code == 0:
+        handle_successful_payment(data, transaction)
+    else:
+        transaction.status = 1
+
+    transaction.save()
+    transaction_data = TransactionSerializer(transaction).data
+
+    logger.info("Transaction completed info: {}".format(transaction_data))
+
+    return HttpResponse('{"status": "ok", "code": 0}')
+
+
+
+
+def initiate_payment_view(request):
+    cl = MpesaClient()
+    phone_number = '0705482738'
+    amount = 1
+    account_reference = 'reference'
+    transaction_desc = 'description'
+    callback_url = 'https://willieilus.pythonanywhere.com/pay/callback'
+    response = cl.stk_push(phone_number, amount, account_reference, transaction_desc, callback_url)
+    return HttpResponse(response)
 
 
 def index(request):
@@ -25,47 +53,6 @@ def index(request):
     response = cl.stk_push(phone_number, amount, account_reference, transaction_desc, callback_url)
     return HttpResponse(response)
 
-
-class MpesaCallbackView(APIView):
-    def post(self, request):
-        logger.info("Callback from MPESA")
-        data = json.loads(request.body)
-        status_code = check_status(data)
-        transaction = get_or_create_transaction(data)
-
-        if status_code == 0:
-            handle_successful_payment(data, transaction)
-        else:
-            transaction.status = 1
-
-        transaction.save()
-        transaction_data = TransactionSerializer(transaction).data
-
-        logger.info("Transaction completed info: {}".format(transaction_data))
-
-        return Response({"status": "ok", "code": 0}, status=status.HTTP_200_OK)
-
-
-class InitiatePaymentView(APIView):
-    def post(self, request):
-        cl = MpesaClient()
-        phone_number = '0705482738'
-        amount = 1
-        account_reference = 'reference'
-        transaction_desc = 'description'
-        callback_url = 'https://willieilus.pythonanywhere.com/pay/callback'
-        response = cl.stk_push(phone_number, amount, account_reference, transaction_desc, callback_url)
-        return Response(response, status=status.HTTP_200_OK)
-
-
-class TransactionListCreateView(generics.ListCreateAPIView):
-    queryset = Transaction.objects.all()
-    serializer_class = TransactionSerializer
-
-
-class TransactionRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Transaction.objects.all()
-    serializer_class = TransactionSerializer
 
 
 def check_status(data):
