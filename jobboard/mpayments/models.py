@@ -1,9 +1,19 @@
 import uuid
 
+STATUS = ((1, "Pending"), (0, "Complete"))
+
 from django.db import models
 
 
-STATUS = ((1, "Pending"), (0, "Complete"))
+class PaymentResponse(models.Model):
+    merchant_request_id = models.CharField(max_length=100)
+    checkout_request_id = models.CharField(max_length=100)
+    response_code = models.CharField(max_length=10)
+    response_description = models.CharField(max_length=200)
+    customer_message = models.CharField(max_length=200)
+
+    def __str__(self):
+        return self.merchant_request_id
 
 
 class Transaction(models.Model):
